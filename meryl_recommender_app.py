@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 import random
 import re
+import os
 
 # ------------------------------
 # Load and preprocess data
