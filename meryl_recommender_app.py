@@ -17,25 +17,40 @@ def load_data():
     df = pd.read_csv("meryl_streep_movies.csv", encoding="utf-8")
     df['Title'] = df['Title'].str.strip()
 
-    # Add poster URLs
-    poster_map = {
-        "The Devil Wears Prada": "https://upload.wikimedia.org/wikipedia/en/0/00/Devil_wears_prada.jpg",
-        "Sophie's Choice": "https://upload.wikimedia.org/wikipedia/en/d/d6/Sophie%27s_Choice.jpg",
-        "Mamma Mia!": "https://upload.wikimedia.org/wikipedia/en/5/5b/MammaMiaTeaserPoster.JPG",
-        "Kramer vs. Kramer": "https://upload.wikimedia.org/wikipedia/en/e/e5/Kramer_vs_Kramer.jpg",
-        "Doubt": "https://upload.wikimedia.org/wikipedia/en/3/31/Doubt_film_poster.jpg",
-        "The Iron Lady": "https://upload.wikimedia.org/wikipedia/en/4/4e/The_Iron_Lady_Poster.jpg",
-        "Julie & Julia": "https://upload.wikimedia.org/wikipedia/en/1/15/Julie_and_julia.jpg",
-        "Into the Woods": "https://upload.wikimedia.org/wikipedia/en/e/e1/Into_the_Woods_poster.jpg",
-        "The Post": "https://upload.wikimedia.org/wikipedia/en/7/74/The_Post_%28film%29.png",
-        "Out of Africa": "https://upload.wikimedia.org/wikipedia/en/d/d8/Out_of_Africa_poster.jpg",
-        "Little Women": "https://upload.wikimedia.org/wikipedia/en/4/4e/Little_Women_2019_poster.jpeg",
-        "The Bridges of Madison County": "https://upload.wikimedia.org/wikipedia/en/1/15/Bridges_of_Madison_County_poster.jpg",
-        "The French Lieutenant's Woman": "https://upload.wikimedia.org/wikipedia/en/d/dc/The_French_Lieutenant%27s_Woman_%281981_film%29.jpg",
-        "The Deer Hunter": "https://upload.wikimedia.org/wikipedia/en/5/5f/Deer_Hunter_poster.jpg",
-        "Florence Foster Jenkins": "https://upload.wikimedia.org/wikipedia/en/f/f1/Florence_Foster_Jenkins_%28film%29_poster.jpg"
-    }
-    df["Poster_URL"] = df["Title"].map(poster_map)
+# Map movie titles to local image filenames
+title_to_filename = {
+    "August: Osage County": "Augustosagecounty2.jpg",
+    "Death Becomes Her": "Deathbecomesher2.jpg",
+    "The Deer Hunter": "Deerhunter4.jpg",
+    "The Devil Wears Prada": "Devilwearsprada1.jpg",
+    "Don't Look Up": "Dontlookup1.jpg",
+    "Doubt": "Doubt1.jpg",
+    "Falling in Love": "Fallinginlove2.jpg",
+    "Florence Foster Jenkins": "Florencefosterjenkins1.jpg",
+    "The French Lieutenant's Woman": "Frenchlieutenantswoman2.jpg",
+    "Heartburn": "Heartburn1.jpg",
+    "The Hours": "Hours.jpg",
+    "Into the Woods": "Intothewoods7.jpg",
+    "The Iron Lady": "Ironlady2.jpg",
+    "Ironweed": "Ironweed1.jpg",
+    "It's Complicated": "Itscomplicated2.jpg",
+    "Julia": "Julia1.jpg",
+    "Kramer vs. Kramer": "Kramervskramer2.jpg",
+    "Lions for Lambs": "Lionsforlambs1.jpg",
+    "Little Women": "Littlewomen20195.jpg",
+    "Mamma Mia!": "Mammamia21.jpg",
+    "The Manchurian Candidate": "Manchuriancandidate.jpg",
+    "Manhattan": "Manhattan6.jpg",
+    "Mary Poppins Returns": "Marypoppinsreturns2.jpg",
+    "Out of Africa": "Outofafrica1.jpg",
+    "The Post": "Post2.jpg",
+    "Postcards from the Edge": "Postcardsfromtheedge1.jpg",
+    "Silkwood": "Silkwood3.jpg",  # or "Silkwood9.jpg"
+    "Sophie's Choice": "Sophieschoice1.jpg"
+}
+
+df["Poster_Filename"] = df["Title"].map(title_to_filename)
+
 
     # Preprocessing
     df.columns = df.columns.str.strip()
@@ -123,6 +138,13 @@ if st.button('Get Recommendations!'):
         for idx, row in suggestions.iterrows():
             st.write(f"🎬 **{row['Title']}** ({int(row['Year'])})")
             st.caption(f"Genre: {', '.join(row['Genre'])}")
-            
-            if pd.notna(row.get("Poster_URL")):
-                st.image(row["Poster_URL"], width=200)
+
+
+            poster_filename = row.get("Poster_Filename", "")
+            poster_path = f"posters/{poster_filename}"
+    
+            if os.path.exists(poster_path):
+                st.image(poster_path, width=200)
+            else:
+                st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
+
