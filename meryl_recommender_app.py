@@ -17,39 +17,39 @@ def load_data():
     df = pd.read_csv("meryl_streep_movies.csv", encoding="utf-8")
     df['Title'] = df['Title'].str.strip()
 
-# Map movie titles to local image filenames
-title_to_filename = {
-    "August: Osage County": "Augustosagecounty2.jpg",
-    "Death Becomes Her": "Deathbecomesher2.jpg",
-    "The Deer Hunter": "Deerhunter4.jpg",
-    "The Devil Wears Prada": "Devilwearsprada1.jpg",
-    "Don't Look Up": "Dontlookup1.jpg",
-    "Doubt": "Doubt1.jpg",
-    "Falling in Love": "Fallinginlove2.jpg",
-    "Florence Foster Jenkins": "Florencefosterjenkins1.jpg",
-    "The French Lieutenant's Woman": "Frenchlieutenantswoman2.jpg",
-    "Heartburn": "Heartburn1.jpg",
-    "The Hours": "Hours.jpg",
-    "Into the Woods": "Intothewoods7.jpg",
-    "The Iron Lady": "Ironlady2.jpg",
-    "Ironweed": "Ironweed1.jpg",
-    "It's Complicated": "Itscomplicated2.jpg",
-    "Julia": "Julia1.jpg",
-    "Kramer vs. Kramer": "Kramervskramer2.jpg",
-    "Lions for Lambs": "Lionsforlambs1.jpg",
-    "Little Women": "Littlewomen20195.jpg",
-    "Mamma Mia!": "Mammamia21.jpg",
-    "The Manchurian Candidate": "Manchuriancandidate.jpg",
-    "Manhattan": "Manhattan6.jpg",
-    "Mary Poppins Returns": "Marypoppinsreturns2.jpg",
-    "Out of Africa": "Outofafrica1.jpg",
-    "The Post": "Post2.jpg",
-    "Postcards from the Edge": "Postcardsfromtheedge1.jpg",
-    "Silkwood": "Silkwood3.jpg",  # or "Silkwood9.jpg"
-    "Sophie's Choice": "Sophieschoice1.jpg"
-}
-
-df["Poster_Filename"] = df["Title"].map(title_to_filename)
+    # Map movie titles to local image filenames
+    title_to_filename = {
+        "August: Osage County": "Augustosagecounty2.jpg",
+        "Death Becomes Her": "Deathbecomesher2.jpg",
+        "The Deer Hunter": "Deerhunter4.jpg",
+        "The Devil Wears Prada": "Devilwearsprada1.jpg",
+        "Don't Look Up": "Dontlookup1.jpg",
+        "Doubt": "Doubt1.jpg",
+        "Falling in Love": "Fallinginlove2.jpg",
+        "Florence Foster Jenkins": "Florencefosterjenkins1.jpg",
+        "The French Lieutenant's Woman": "Frenchlieutenantswoman2.jpg",
+        "Heartburn": "Heartburn1.jpg",
+        "The Hours": "Hours.jpg",
+        "Into the Woods": "Intothewoods7.jpg",
+        "The Iron Lady": "Ironlady2.jpg",
+        "Ironweed": "Ironweed1.jpg",
+        "It's Complicated": "Itscomplicated2.jpg",
+        "Julia": "Julia1.jpg",
+        "Kramer vs. Kramer": "Kramervskramer2.jpg",
+        "Lions for Lambs": "Lionsforlambs1.jpg",
+        "Little Women": "Littlewomen20195.jpg",
+        "Mamma Mia!": "Mammamia21.jpg",
+        "The Manchurian Candidate": "Manchuriancandidate.jpg",
+        "Manhattan": "Manhattan6.jpg",
+        "Mary Poppins Returns": "Marypoppinsreturns2.jpg",
+        "Out of Africa": "Outofafrica1.jpg",
+        "The Post": "Post2.jpg",
+        "Postcards from the Edge": "Postcardsfromtheedge1.jpg",
+        "Silkwood": "Silkwood3.jpg",  # or "Silkwood9.jpg"
+        "Sophie's Choice": "Sophieschoice1.jpg"
+    }
+    
+    df["Poster_Filename"] = df["Title"].map(title_to_filename)
 
 
     # Preprocessing
