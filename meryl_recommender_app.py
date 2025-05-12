@@ -1,24 +1,18 @@
-# meryl_recommender_app.py
-
 import streamlit as st
 import pandas as pd
 from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import silhouette_score
 import random
 import re
 import os
 
-# ------------------------------
-# Load and preprocess data
-# ------------------------------
-
 @st.cache_data
-def load_data():
+def load_and_preprocess_data():
     df = pd.read_csv("meryl_streep_movies.csv", encoding="utf-8")
     df['Title'] = df['Title'].str.strip()
 
-    # Map movie titles to local image filenames
     title_to_filename = {
         "August: Osage County": "Augustosagecounty2.jpg",
         "Death Becomes Her": "Deathbecomesher2.jpg",
@@ -46,14 +40,12 @@ def load_data():
         "Out of Africa": "Outofafrica1.jpg",
         "The Post": "Post2.jpg",
         "Postcards from the Edge": "Postcardsfromtheedge1.jpg",
-        "Silkwood": "Silkwood3.jpg",  # or "Silkwood9.jpg"
+        "Silkwood": "Silkwood3.jpg",
         "Sophie's Choice": "Sophieschoice1.jpg"
     }
-    
+
     df["Poster_Filename"] = df["Title"].map(title_to_filename)
 
-
-    # Preprocessing
     df.columns = df.columns.str.strip()
     df['Genre'] = df['Genre'].fillna('').str.split('/')
     df['Mood_Tags'] = df['Mood_Tags'].fillna('').str.split(', ')
@@ -94,58 +86,67 @@ def load_data():
         df_synopsis.reset_index(drop=True)
     ], axis=1)
 
-    kmeans = KMeans(n_clusters=4, random_state=42, n_init=10)
-    df['Cluster'] = kmeans.fit_predict(final_features)
+    return df, final_features
 
-    return df
+@st.cache_data
+def auto_cluster_and_map(df, features):
+    silhouette_scores = []
+    range_n = range(3, 7)
 
+    for n in range_n:
+        km = KMeans(n_clusters=n, random_state=42, n_init=10)
+        preds = km.fit_predict(features)
+        score = silhouette_score(features, preds)
+        silhouette_scores.append(score)
 
-df = load_data()
+    best_n = range_n[silhouette_scores.index(max(silhouette_scores))]
+    st.write(f"📊 Auto-detected best clusters: {best_n} (Silhouette Score: {max(silhouette_scores):.2f})")
 
-# ------------------------------
-# Streamlit User Interface
-# ------------------------------
+    kmeans = KMeans(n_clusters=best_n, random_state=42, n_init=10)
+    df['Cluster'] = kmeans.fit_predict(features)
 
-st.title("🎬 Meryl Streep Movie Recommender")
-st.write("Pick your mood and we'll recommend some Meryl Streep classics!")
+    mood_keywords = {
+        "laugh": ["comedy", "funny", "satire", "romantic"],
+        "cry": ["tragedy", "drama", "emotional", "heartbreaking"],
+        "escape": ["fantasy", "adventure", "musical", "magic"],
+        "think deeply": ["thriller", "biography", "political", "historical", "war"]
+    }
 
-# Define moods
-moods = ["Laugh", "Cry", "Escape", "Think Deeply"]
+    cluster_mood = {}
+    for cluster in df['Cluster'].unique():
+        cluster_df = df[df['Cluster'] == cluster]
+        synopsis_text = " ".join(cluster_df['Synopsis'].tolist()).lower()
+        mood_scores = {mood: sum(synopsis_text.count(kw) for kw in kws) for mood, kws in mood_keywords.items()}
+        assigned_mood = max(mood_scores, key=mood_scores.get)
+        cluster_mood[cluster] = assigned_mood
 
-# Mood selector
-user_mood = st.selectbox("What mood are you in?", moods)
+    return df, cluster_mood
 
-# Mood to cluster mapping
-mood_to_cluster = {
-    "laugh": 0,
-    "cry": 1,
-    "escape": 2,
-    "think deeply": 3
-}
+df, final_features = load_and_preprocess_data()
+df, cluster_mood = auto_cluster_and_map(df, final_features)
 
-# Button to get recommendation
+# UI
+st.title("🎬 Meryl Streep Movie Recommender (Dynamic Clusters)")
+
+user_mood = st.selectbox("What's your mood?", ["Laugh", "Cry", "Escape", "Think Deeply"]).lower()
+
+cluster_to_mood_inverse = {v: k for k, v in cluster_mood.items()}
+chosen_cluster = cluster_to_mood_inverse.get(user_mood)
+
 if st.button('Get Recommendations!'):
-    user_mood_lower = user_mood.lower().strip()
-    chosen_cluster = mood_to_cluster.get(user_mood_lower)
-
     if chosen_cluster is None:
-        st.error("Sorry, we couldn't match your mood.")
+        st.error("No matching cluster found for this mood. Try another mood.")
     else:
-        recommended_movies = df[df['Cluster'] == chosen_cluster]
-        suggestions = recommended_movies.sample(3) if len(recommended_movies) >= 3 else recommended_movies
+        recommended = df[df['Cluster'] == chosen_cluster]
+        suggestions = recommended.sample(3) if len(recommended) >= 3 else recommended
 
-        st.success("Here are your recommended movies!")
-        
+        st.success(f"Movies for your '{user_mood.capitalize()}' mood:")
         for idx, row in suggestions.iterrows():
             st.write(f"🎬 **{row['Title']}** ({int(row['Year'])})")
             st.caption(f"Genre: {', '.join(row['Genre'])}")
-
-
             poster_filename = row.get("Poster_Filename", "")
             poster_path = f"posters/{poster_filename}"
-    
             if os.path.exists(poster_path):
                 st.image(poster_path, width=200)
             else:
                 st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
-
