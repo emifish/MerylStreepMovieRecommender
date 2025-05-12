@@ -123,15 +123,15 @@ else:
             st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
 
 # --- Visualize cluster mood confidence ---
-st.header("🔍 Cluster Mood Confidence (Per Cluster)")
-for cluster in df['Cluster'].unique():
-    if cluster == 'Noise':
-        continue
-    mood_scores = cluster_mood_scores[cluster]
-    plt.figure(figsize=(6, 3))
-    sns.barplot(x=list(mood_scores.keys()), y=list(mood_scores.values()), palette='muted')
-    plt.title(f"{cluster} - Assigned Mood: {cluster_mood[cluster].capitalize()}")
-    plt.ylabel("Confidence Score")
-    plt.xticks(rotation=45)
-    st.pyplot(plt)
-    plt.close()
+    # #st.header("🔍 Cluster Mood Confidence (Per Cluster)")
+    # for cluster in df['Cluster'].unique():
+    #     if cluster == 'Noise':
+    #         continue
+    #     mood_scores = cluster_mood_scores[cluster]
+    #     plt.figure(figsize=(6, 3))
+    #     sns.barplot(x=list(mood_scores.keys()), y=list(mood_scores.values()), palette='muted')
+    #     plt.title(f"{cluster} - Assigned Mood: {cluster_mood[cluster].capitalize()}")
+    #     plt.ylabel("Confidence Score")
+    #     plt.xticks(rotation=45)
+    #     st.pyplot(plt)
+    #     plt.close()
