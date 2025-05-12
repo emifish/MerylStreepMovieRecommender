@@ -5,3 +5,4 @@ textblob
 matplotlib
 seaborn
 numpy
+fuzzywuzzy[speedup]
