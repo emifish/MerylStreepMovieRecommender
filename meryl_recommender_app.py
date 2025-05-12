@@ -2,85 +2,50 @@ import streamlit as st
 import pandas as pd
 import os
 import re
-import hdbscan
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
-from fuzzywuzzy import process, fuzz
 from textblob import TextBlob
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
+from fuzzywuzzy import process, fuzz
+from PIL import Image, UnidentifiedImageError
 
 # --- Load data ---
 @st.cache_data
-def load_and_preprocess_data():
+def load_data():
     df = pd.read_csv("meryl_streep_movies.csv")
     df['Synopsis'] = df['Synopsis'].fillna('')
     df['Genre'] = df['Genre'].fillna('').str.split('/')
-    df['Awards'] = df['Awards'].fillna('')
     df['Synopsis_Sentiment'] = df['Synopsis'].apply(lambda x: TextBlob(x).sentiment.polarity)
     return df
 
-df = load_and_preprocess_data()
+df = load_data()
 
-# --- Feature Engineering ---
-vectorizer = TfidfVectorizer(max_features=100, stop_words='english')
-synopsis_tfidf = vectorizer.fit_transform(df['Synopsis']).toarray()
+# --- Editable Heuristic Rules UI ---
+st.sidebar.header("⚙️ Heuristic Mood Rules Configuration")
 
-mlb = MultiLabelBinarizer()
-genre_encoded = mlb.fit_transform(df['Genre'])
+laugh_keywords = st.sidebar.text_area("Laugh keywords (comma separated)", "comedy, funny, satire, romantic, light").lower().split(',')
+cry_keywords = st.sidebar.text_area("Cry keywords (comma separated)", "tragedy, drama, emotional, sad, heartbreaking").lower().split(',')
+escape_keywords = st.sidebar.text_area("Escape keywords (comma separated)", "fantasy, adventure, musical, magic, whimsical").lower().split(',')
+think_keywords = st.sidebar.text_area("Think Deeply keywords (comma separated)", "thriller, biography, political, historical, war").lower().split(',')
 
-df['IMDb_Rating'] = pd.to_numeric(df['IMDb_Rating'], errors='coerce').fillna(0)
-df['Year'] = pd.to_numeric(df['Year'], errors='coerce').fillna(0)
-numeric_features = df[['IMDb_Rating', 'Year']].values
-scaler = StandardScaler()
-numeric_scaled = scaler.fit_transform(numeric_features)
+laugh_sentiment = st.sidebar.number_input("Laugh sentiment threshold", value=0.3)
+cry_sentiment = st.sidebar.number_input("Cry sentiment threshold", value=-0.2)
 
-features = np.hstack([synopsis_tfidf, genre_encoded, numeric_scaled])
+# --- Mood assignment logic ---
+def assign_mood(row):
+    synopsis = row['Synopsis'].lower()
+    genres = [g.lower() for g in row['Genre']]
+    sentiment = row['Synopsis_Sentiment']
 
-# --- HDBSCAN clustering ---
-clusterer = hdbscan.HDBSCAN(min_cluster_size=3, metric='euclidean')
-df['Cluster'] = clusterer.fit_predict(features)
-df['Cluster'] = df['Cluster'].apply(lambda x: 'Noise' if x == -1 else f'Cluster {x}')
+    if any(g in genres for g in laugh_keywords) or any(kw.strip() in synopsis for kw in laugh_keywords) or sentiment > laugh_sentiment:
+        return 'Laugh'
+    elif any(g in genres for g in cry_keywords) and (any(kw.strip() in synopsis for kw in cry_keywords) or sentiment < cry_sentiment):
+        return 'Cry'
+    elif any(g in genres for g in escape_keywords) or any(kw.strip() in synopsis for kw in escape_keywords):
+        return 'Escape'
+    else:
+        return 'Think Deeply'
 
-# --- Mood scoring logic ---
-mood_keywords = {
-    "laugh": ["comedy", "funny", "satire", "romantic", "light"],
-    "cry": ["tragedy", "drama", "emotional", "sad", "heartbreaking"],
-    "escape": ["fantasy", "adventure", "musical", "magic", "whimsical"],
-    "think deeply": ["thriller", "biography", "political", "historical", "war"]
-}
+df['Assigned_Mood'] = df.apply(assign_mood, axis=1)
 
-cluster_mood = {}
-cluster_mood_scores = {}
-
-for cluster in df['Cluster'].unique():
-    if cluster == 'Noise':
-        continue
-    cluster_df = df[df['Cluster'] == cluster]
-    synopsis_text = " ".join(cluster_df['Synopsis'].tolist()).lower()
-    avg_sentiment = cluster_df['Synopsis_Sentiment'].mean()
-
-    mood_scores = {}
-    for mood, kws in mood_keywords.items():
-        keyword_score = sum(synopsis_text.count(kw) for kw in kws)
-        genre_score = cluster_df['Genre'].apply(lambda g: sum(1 for kw in kws if kw in [x.lower() for x in g])).sum()
-        if mood == 'laugh':
-            sentiment_factor = max(avg_sentiment, 0)
-        elif mood == 'cry':
-            sentiment_factor = max(-avg_sentiment, 0)
-        elif mood == 'escape':
-            sentiment_factor = abs(avg_sentiment)
-        else:
-            sentiment_factor = 1 - abs(avg_sentiment)
-        overall_score = (0.5 * keyword_score) + (0.3 * genre_score) + (0.2 * sentiment_factor * 10)
-        mood_scores[mood] = overall_score
-
-    cluster_mood_scores[cluster] = mood_scores
-    assigned_mood = max(mood_scores, key=mood_scores.get)
-    cluster_mood[cluster] = assigned_mood
-
-# --- Poster fuzzy matching logic ---
+# --- Poster fuzzy matching ---
 POSTERS_FOLDER = "posters/"
 poster_files = [f for f in os.listdir(POSTERS_FOLDER) if f.lower().endswith(('.jpg', '.png'))]
 poster_file_keys = [os.path.splitext(f)[0] for f in poster_files]
@@ -96,14 +61,24 @@ def match_poster(title):
         return poster_files[matched_index]
     return None
 
+def safe_display_poster(title):
+    try:
+        poster_filename = match_poster(title)
+        poster_path = f"{POSTERS_FOLDER}{poster_filename}"
+        if poster_filename and os.path.exists(poster_path):
+            with Image.open(poster_path) as img:
+                st.image(poster_path, width=200)
+        else:
+            st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
+    except (UnidentifiedImageError, OSError, FileNotFoundError):
+        st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
+
 # --- UI ---
-st.title("🎬 Meryl Streep Movie Recommender (with HDBSCAN & Fuzzy Posters)")
+st.title("🎬 Meryl Streep Movie Recommender (Heuristic + Fuzzy Posters)")
 
-user_mood = st.selectbox("What's your mood?", ['Laugh', 'Cry', 'Escape', 'Think Deeply'])
+user_mood = st.selectbox("What mood are you in?", ['Laugh', 'Cry', 'Escape', 'Think Deeply'])
 
-# Map mood to detected clusters
-mood_to_clusters = [c for c, m in cluster_mood.items() if m.lower() == user_mood.lower()]
-recommended = df[df['Cluster'].isin(mood_to_clusters)]
+recommended = df[df['Assigned_Mood'].str.lower() == user_mood.lower()]
 
 if recommended.empty:
     st.warning(f"No movies found for mood '{user_mood}'.")
@@ -114,29 +89,16 @@ else:
         st.write(f"🎬 **{row['Title']}** ({int(row['Year'])})")
         st.caption(f"Genre: {', '.join(row['Genre'])}")
         st.write(f"📖 {row['Synopsis'][:300]}...")
-        
-        try:
-            poster_filename = match_poster(row['Title'])
-            poster_path = f"{POSTERS_FOLDER}{poster_filename}"
-            if poster_filename and os.path.exists(poster_path):
-                with Image.open(poster_path) as img:
-                    st.image(poster_path, width=200)
-            else:
-                st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
-        except (UnidentifiedImageError, OSError, FileNotFoundError):
-            st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
-        
 
-# --- Visualize cluster mood confidence ---
-    # #st.header("🔍 Cluster Mood Confidence (Per Cluster)")
-    # for cluster in df['Cluster'].unique():
-    #     if cluster == 'Noise':
-    #         continue
-    #     mood_scores = cluster_mood_scores[cluster]
-    #     plt.figure(figsize=(6, 3))
-    #     sns.barplot(x=list(mood_scores.keys()), y=list(mood_scores.values()), palette='muted')
-    #     plt.title(f"{cluster} - Assigned Mood: {cluster_mood[cluster].capitalize()}")
-    #     plt.ylabel("Confidence Score")
-    #     plt.xticks(rotation=45)
-    #     st.pyplot(plt)
-    #     plt.close()
+        # Use safe display poster function
+        safe_display_poster(row['Title'])
+
+# --- Preview table ---
+st.header("📋 All Movies with Assigned Moods (Heuristic - User Tuned)")
+
+selected_mood_filter = st.selectbox("Filter table by mood", ['All'] + df['Assigned_Mood'].unique().tolist())
+
+if selected_mood_filter != 'All':
+    st.dataframe(df[df['Assigned_Mood'] == selected_mood_filter][['Title', 'Year', 'Genre', 'Assigned_Mood', 'Synopsis_Sentiment']])
+else:
+    st.dataframe(df[['Title', 'Year', ']()]()
