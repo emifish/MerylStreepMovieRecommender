@@ -117,9 +117,9 @@ else:
 
         poster_path = f"{POSTERS_FOLDER}{poster_filename}"
         if poster_filename and os.path.exists(poster_path):
-        # Validate it's a loadable image (catch corrupt or invalid images)
-        with Image.open(poster_path) as img:
-            st.image(poster_path, width=200)
+            # Validate it's a loadable image (catch corrupt or invalid images)
+            with Image.open(poster_path) as img:
+                st.image(poster_path, width=200)
         else:
             st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
         except (UnidentifiedImageError, OSError, FileNotFoundError):
