@@ -114,16 +114,18 @@ else:
         st.write(f"🎬 **{row['Title']}** ({int(row['Year'])})")
         st.caption(f"Genre: {', '.join(row['Genre'])}")
         st.write(f"📖 {row['Synopsis'][:300]}...")
-
-        poster_path = f"{POSTERS_FOLDER}{poster_filename}"
-        if poster_filename and os.path.exists(poster_path):
-            # Validate it's a loadable image (catch corrupt or invalid images)
-            with Image.open(poster_path) as img:
-                st.image(poster_path, width=200)
-        else:
+        
+        try:
+            poster_filename = match_poster(row['Title'])
+            poster_path = f"{POSTERS_FOLDER}{poster_filename}"
+            if poster_filename and os.path.exists(poster_path):
+                with Image.open(poster_path) as img:
+                    st.image(poster_path, width=200)
+            else:
+                st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
+        except (UnidentifiedImageError, OSError, FileNotFoundError):
             st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
-    except (UnidentifiedImageError, OSError, FileNotFoundError):
-            st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
+        
 
 # --- Visualize cluster mood confidence ---
     # #st.header("🔍 Cluster Mood Confidence (Per Cluster)")
