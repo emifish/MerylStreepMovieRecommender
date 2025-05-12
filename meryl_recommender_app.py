@@ -101,4 +101,4 @@ selected_mood_filter = st.selectbox("Filter table by mood", ['All'] + df['Assign
 if selected_mood_filter != 'All':
     st.dataframe(df[df['Assigned_Mood'] == selected_mood_filter][['Title', 'Year', 'Genre', 'Assigned_Mood', 'Synopsis_Sentiment']])
 else:
-    st.dataframe(df[['Title', 'Year', ']()]()
+    st.dataframe(df[['Title', 'Year', 'Genre', 'Assigned_Mood', 'Synopsis_Sentiment']])
