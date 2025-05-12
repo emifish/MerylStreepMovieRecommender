@@ -122,7 +122,7 @@ else:
                 st.image(poster_path, width=200)
         else:
             st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
-        except (UnidentifiedImageError, OSError, FileNotFoundError):
+    except (UnidentifiedImageError, OSError, FileNotFoundError):
             st.image("https://via.placeholder.com/200x300?text=No+Poster", width=200)
 
 # --- Visualize cluster mood confidence ---
