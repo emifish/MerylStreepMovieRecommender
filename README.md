@@ -1,7 +1,7 @@
 🎬 Meryl Streep Movie Recommender
 Welcome to the Meryl Streep Movie Recommender — a fun and simple app that suggests Meryl Streep films based on your mood or genre preferences. Built with Python and Streamlit, this project is designed to explore how a lightweight recommendation engine can be delivered with minimal infrastructure and maximum flair (just like Meryl herself).
 
-👉 Try the app on Streamlit (replace with your actual app URL)
+👉 Try the app on Streamlit https://merylmoviebot.streamlit.app/
 
 🧠 About This Project
 This is a work in progress created as part of a personal learning journey into clustering, heuristics, and lightweight recommendation logic. The current version uses basic filtering techniques and keyword matching, and future iterations will explore unsupervised learning methods to group movies by thematic and stylistic similarities.
